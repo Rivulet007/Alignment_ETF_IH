@@ -1,6 +1,6 @@
 """
 进行2025年10月31号单日的处理，调整etf时间戳为北京时间，以期货为基准找最新etf价格，进行对齐
-输出四个主力合约的数据（包括时间、期货和现货买卖价格、基差）和对齐质量报告
+输出四个主力合约的数据（包括时间、期货和现货买卖价格&挂单量&成交量、基差）和对齐质量报告
 """
 
 import pandas as pd
@@ -53,10 +53,9 @@ for contract in contracts:
         continue
 
     # 4. 执行对齐逻辑 (merge_asof)
-    # 这里的列表加入了新增的 'volume_delta'
     df_aligned = pd.merge_asof(
         df_fut_day,
-        df_etf_day[['datetime', 'lastPrice', 'askPrice', 'bidPrice']],
+        df_etf_day[['datetime', 'lastPrice', 'askPrice', 'bidPrice' , 'askVol', 'bidVol', 'volume_delta']],
         on='datetime',
         direction='backward'
     )
@@ -68,8 +67,8 @@ for contract in contracts:
     # 加入期货的买一和卖一价格，以及 ETF 的增量成交量
     output_columns = [
         'datetime',
-        '最新', '卖一价', '买一价',  # 期货端价格
-        'lastPrice', 'askPrice', 'bidPrice', # ETF端价格
+        '最新', '卖一价', '买一价', '买一量', '卖一量', '成交量', # 期货端价格
+        'lastPrice', 'askPrice', 'bidPrice', 'askVol', 'bidVol', 'volume_delta',# ETF端价格
         'basis'
     ]
 
@@ -77,7 +76,7 @@ for contract in contracts:
 
     # 重命名列名
     # 时间，期货最新价，期货卖一价，期货买一价，etf最新价，etf卖一价，etf买一价，基差
-    df_final.columns = ['datetime', 'fut_last', 'fut_ask', 'fut_bid', 'etf_last', 'etf_ask', 'etf_bid', 'basis']
+    df_final.columns = ['datetime', 'fut_last', 'fut_askPrice', 'fut_bidPrice', 'fut_askVol', 'fut_bidVol', 'fut_Vol', 'etf_last', 'etf_askPrice', 'etf_bidPrice', 'etf_askVol', 'etf_bidVol', 'etf_Vol', 'basis']
 
     output_file = f'aligned_{contract}_{target_date}.csv'
     df_final.to_csv(output_file, index=False, encoding='utf_8_sig')
